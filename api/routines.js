@@ -6,13 +6,15 @@ const {
     getAllRoutines,
     createRoutine,
     updateRoutine,
+    getRoutineById,
     destroyRoutine,
+    getActivityById,
+    attachActivitiesToRoutines
 } = require ('../db')
 // GET /api/routines
 router.get("/", async (req, res, next) => {
     try {
       const getRoutines= await getAllRoutines();
-      console.log(getRoutines)
       res.send(getRoutines);
     } catch (error) {
       next({
@@ -26,12 +28,10 @@ router.get("/", async (req, res, next) => {
 router.post ('/', requireUser, async (req,res,next) => {
     const {name,goal,isPublic} = req.body;
 
-    const creatorId = req.user.id; //logged in user
-    console.log(req.user, "ufaosdijf;kldsjflkae")
     try {
-        if (creatorId){
+        const creatorId = req.user.id ; 
+        if (creatorId === req.user.id){
             const routinesCreated = await createRoutine({creatorId,name,goal,isPublic});
-            console.log(routinesCreated)
             res.send(routinesCreated)
         }else{
             res.send({
@@ -47,9 +47,105 @@ router.post ('/', requireUser, async (req,res,next) => {
 
 
 // PATCH /api/routines/:routineId
+router.patch ("/:routineId", requireUser, async (req,res,next) => {
+    const { routineId } = req.params;
+    const {isPublic, name, goal } = req.body;
+    console.log(req.params,req.user, 'req.params');
+
+    try{
+        const getRoutineId = await getRoutineById(routineId)
+        console.log(getRoutineId.creatorId , req.user.id,"ceratoriD")
+
+        if(getRoutineId.creatorId === req.user.id){
+            const updateRoutines = await updateRoutine ({id:routineId,isPublic,name,goal}); 
+            res.send(updateRoutines)
+
+        }else{
+            res.status(403);
+            res.send({
+                error:"Unauthorized",
+                name: "Unauthorized",
+                message: `User ${req.user.username} is not allowed to update ${getRoutineId.name}`
+            });
+        }
+    }catch ({error,name,message}){
+        next({
+            error:"Unauthorized",
+            name: "Unauthorized",
+            message: "Unauthorzied "
+        })
+    }
+})
+
 
 // DELETE /api/routines/:routineId
 
+router.delete ("/:routineId", requireUser, async (req,res,next) => {
+    const { routineId} = req.params;
+    
+    try{
+        const getRoutineId = await getRoutineById(routineId)
+        console.log(getRoutineId.creatorId , req.user.id,"ceratoriD")
+
+        if(getRoutineId && getRoutineId.creatorId === req.user.id){
+            const destroyRoutines = await destroyRoutine (getRoutineId.id,{isPublic:false}); 
+            res.send(destroyRoutines)
+
+        }else{
+            res.status(403);
+            res.send({
+                error:"Unauthorized",
+                name: "Unauthorized",
+                message: `User ${req.user.username} is not allowed to delete ${getRoutineId.name}`
+            });
+        }
+    }catch ({error,name,message}){
+        next({
+            error:"Unauthorized",
+            name: "Unauthorized",
+            message: "Unauthorzied "
+        })
+    }
+})
+
+
 // POST /api/routines/:routineId/activities
+router.patch ('/:routineId/activities', async (req,res,next) => {
+    const { routineId } = req.params;
+    const {activityId,count,duration} = req.body
+
+    try{
+        const getRoutine = await getRoutineById(routineId);
+        console.log(getRoutine , 'routien')
+        const activityById = await getActivityById (activityId);
+        console.log(activityById , 'activity id')
+        const attachActivity = await attachActivitiesToRoutines(getRoutine);
+        console.log(attachActivity, 'attach activity')
+
+        if(getRoutine.id ){
+            getRoutine.activities = {
+                activityId,
+                count,
+                duration,
+                routineId
+            }; 
+            res.send(getRoutine.activities)
+
+        }else{
+            res.status(403);
+            res.send({
+                error:"Unauthorized",
+                name: "Unauthorized",
+                message: `Activity ID ${activityId} already exists in Routine ID ${getRoutine.id}`
+            });
+        }
+    }catch ({error,name,message}){
+        next({
+            error:"Unauthorized",
+            name: "Unauthorized",
+            message: "Unauthorzied "
+        })
+    }
+});
 
 module.exports = router;

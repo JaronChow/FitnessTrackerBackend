@@ -13,13 +13,13 @@ const {
     updateActivity,
 
 } = require('../db');
+const { requireUser } = require('./utils');
 
 // GET /api/activities/:activityId/routines
 router.get('/:activityId/routines' , async (req,res,next) => {
     const activityId = req.params.activityId;
 
     const activity = await getActivityById(activityId)
-    console.log(activity ,"activity")
     if(activity){
         try {
             const routines = await getPublicRoutinesByActivity(activityId);
@@ -53,21 +53,60 @@ router.get("/", async (req, res, next) => {
 });
 // POST /api/activities
 
-router.post ('/', async (req,res,next) => {
+router.post ('/',requireUser, async (req,res,next) => {
     const {name,description} = req.body
+    console.log(req.user , "req.user")
     try {
-        const activitiesCreated = await createActivity({name,description});
-        res.send(activitiesCreated)
+        const activityexists = await getActivityByName(name);
+        if(!activityexists){
+            const activitiesCreated = await createActivity({name,description});
+            console.log(activitiesCreated, 'activities created')
+            res.send(activitiesCreated)
+        }else {
+            res.send({
+                error: `An activity with name ${name} already exists`,
+                name: "Activity already exists",
+                message: `An activity with name ${name} already exists`,
+            })
+        }
     } catch(error){
-    next({
-        error: "There are no activities!",
-        name: "Activity does not exist",
-        message: `There are no activities!`,
+        next({
+            error: "ErrorMissingActivity",
+            name: "Missing Activity Error",
+            message: `Activity not found`,
         });
     }
 });
 
 // PATCH /api/activities/:activityId
 
+router.patch ("/:activityId", async (req,res,next) => {
+    const { activityId } = req.params;
+    const {name,description} = req.body
+    console.log(req.params,req.user, 'req.params');
+
+    try{
+        const getActivity = await getActivityById(activityId)
+        console.log(getActivity , req.user.id,"activityiD")
+
+        if(getActivity){
+            const updateActivities = await updateActivity ({name,description}); 
+            res.send(updateActivities)
+
+        }else{
+            res.send({
+                error:"Activity not found",
+                name: "Activity not found",
+                message: `Activity ${activityId} not found`
+            });
+        }
+    }catch ({error,name,message}){
+        next({
+            error:"Activity not found",
+            name: "Activity not found",
+            message: `Activity ${activityId} not found`
+        })
+    }
+})
 
 module.exports = router;

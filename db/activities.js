@@ -71,7 +71,7 @@ async function attachActivitiesToRoutines(routines) {
   // looped through. Then return the new routines (new routines variable).
   const returnRoutines = [...routines];
   const routineIds = routines.map(routine => routine.id);
-  const insertValues = routines.map((element, index) => `$${index + 1}`).join(', ');
+  const insertValues = routines.map((_, index) => `$${index + 1}`).join(', ');
  
 
   try {
