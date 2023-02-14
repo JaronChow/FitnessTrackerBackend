@@ -70,8 +70,8 @@ async function attachActivitiesToRoutines(routines) {
   // looping through, and then adding filter variable to each indivdual routine as its being
   // looped through. Then return the new routines (new routines variable).
   const returnRoutines = [...routines];
-  const insertValues = routines.map((_, index) => `$${index + 1}`).join(', ');
-  const routineIds = routines.map(routine => routine.id)
+  const routineIds = routines.map(routine => routine.id);
+  const insertValues = routines.map((element, index) => `$${index + 1}`).join(', ');
  
 
   try {
@@ -82,14 +82,11 @@ async function attachActivitiesToRoutines(routines) {
       WHERE routine_activities."routineId" IN (${insertValues})
     ;`, routineIds);
 
-
     for (let i = 0 ; i < returnRoutines.length; i++){
       const addActivities = activities.filter (activity => activity.routineId === returnRoutines[i].id);
       returnRoutines[i].activities = addActivities;
     } 
-
-
-    return returnRoutines
+    return returnRoutines;
   }catch (error){
     console.log(error)
   }

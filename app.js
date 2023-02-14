@@ -12,21 +12,20 @@ app.use(cors());
 app.use(morgan("dev"));
 app.use('/api', require('./api'));
 
-app.use('*', (error,req,res,next) => {
-    res.status(500);
-    res.send({
-        error: error.error,
-        name: error.name,
-        message: error.message
-        })
-})
+// app.use( (error,req,res) => {
+//     res.send({
+//         error: error.error,
+//         name: error.name,
+//         message: error.message
+//         })
+// })
 
-app.use(function(req, res, next) {
-    if (!req.headers.authorization) {
-      return res.status(403).json({ error: 'No credentials sent!' });
-    }
-    next();
-  });
+// app.use(function(req, res, next) {
+//     if (!req.headers.authorization) {
+//       return res.status(403).json({ error: 'No credentials sent!' });
+//     }
+//     next();
+//   });
 
 // const client = require("./db/client");
 // client.connect();

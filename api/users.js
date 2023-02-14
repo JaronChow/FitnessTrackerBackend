@@ -2,12 +2,14 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
+const {requireUser} = require("./utils")
 const { JWT_SECRET } = process.env;
 
 const {
     createUser,
     getUser,
     getUserByUsername,
+    getPublicRoutinesByUser,
     getAllRoutinesByUser
   } = require ('../db')
 
@@ -18,21 +20,21 @@ const { username, password } = req.body;
 try {
     const _user = await getUserByUsername(username);
     if (password.length < 8) {
-        next({
+        res.send({
             error: "error",
             message: "Password Too Short!",
             name: "PasswordLengthError",
         })
     }
     if (_user) {
-        next({
+        res.send({
             error: "error",
             message: `User ${username} is already taken.`,
             name: 'UserExistsError',
         });
     }
     const user = await createUser({username,password});  
-    const token = jwt.sign({id: user.id, username},JWT_SECRET,{expiresIn: '1w'});
+    const token = jwt.sign({id: user.id, username:username},JWT_SECRET,{expiresIn: '1w'});
       res.send({ 
         message: "thank you for signing up",
         token,
@@ -80,17 +82,15 @@ router.post('/login', async (req, res, next) => {
 
 // GET /api/users/me
 
-router.get('/me', async (req, res, next) => {
+router.get('/me', requireUser,async (req, res, next) => {
   const user = req.user
   try {
-    const token = req.headers.authorization.split(' ')[1];
-    console.log(token, "token")
-    if (!token){
-      next({
-        error: "Invalid",
-        name: "InvalidCredentialsError",
-        message:"Invalid"
-      })
+    if (!req.user){
+      res.send({
+        error:"Unauthorized",
+        name:"UnauthorizedUser",
+        message: "You must be logged in to perform this action"
+    });
     } else {
       res.send(
         user
@@ -104,22 +104,25 @@ router.get('/me', async (req, res, next) => {
 // GET /api/users/:username/routines
 
 router.get('/:username/routines', async (req, res, next) => {
-  const {username} = req.body
-  try {
-    const routines = await getAllRoutinesByUser
-    if (!req.user){
-        next({
-            name: "InvalidCredentialsError",
-            message:"nobody logged in"
-        })
-    } else {
-        res.send({ 
-            
-        });
+  const { username } = req.params
+  console.log(req.params ,"req.params")
+  if(req.user.username == username){
+    console.log(req.user, "req.user")
+    try {
+        const routines = await getAllRoutinesByUser({username})
+        console.log(routines)
+        res.send(routines)
+      }catch({name, message}) {
+      next({name, message});
+      }
+  } else{
+    try {
+      const publicRoutines = await getPublicRoutinesByUser({username});
+      console.log(publicRoutines)
+      res.send(publicRoutines)
+    }catch({name, message}) {
+      next({name, message});
     }
-  } catch(error) {
-    console.log(error);
-    next(error);
   }
 });
 
