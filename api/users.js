@@ -34,7 +34,7 @@ try {
         });
     }
     const user = await createUser({username,password});  
-    const token = jwt.sign({id: user.id, username:username},JWT_SECRET,{expiresIn: '1w'});
+    const token = jwt.sign({id: user.id, username: user.username},JWT_SECRET,{expiresIn: '1w'});
       res.send({ 
         message: "thank you for signing up",
         token,
